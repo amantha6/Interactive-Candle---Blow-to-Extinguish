@@ -443,7 +443,6 @@
       <div class="button-group">
         <button id="mic-btn">Enable Microphone</button>
         <button id="light-btn">Relight Candle</button>
-        <button id="test-btn">Test Blow</button>
       </div>
       
       <div class="sensitivity-control">
@@ -473,7 +472,6 @@
     const ambientLight = document.querySelector('.ambient-light');
     const micBtn = document.getElementById('mic-btn');
     const lightBtn = document.getElementById('light-btn');
-    const testBtn = document.getElementById('test-btn');
     const status = document.querySelector('.status');
     const blowMeterFill = document.querySelector('.blow-meter-fill');
     const sensitivitySlider = document.getElementById('sensitivity');
@@ -488,7 +486,6 @@
     
     // Configuration
     let blowThreshold = 130; // Will be adjusted based on sensitivity
-    let baseSensitivity = 50;
     let consecutiveBlowFrames = 0;
     const requiredBlowFrames = 3; // Make it a bit more responsive
     
@@ -638,15 +635,6 @@
         setTimeout(() => {
           flame.classList.remove('relight');
         }, 1000);
-      }
-    });
-    
-    // Test blow button (for testing without microphone)
-    testBtn.addEventListener('click', () => {
-      if (isCandleLit) {
-        blowOutCandle();
-      } else {
-        status.textContent = 'Candle is already out. Click "Relight Candle" to continue.';
       }
     });
     
