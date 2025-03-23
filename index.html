@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Interactive Candle</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    
+    :root {
+      --candle-color: linear-gradient(to bottom, #f8e9d6, #f5deb3 50%, #e6c79c);
+      --flame-color: radial-gradient(ellipse at center, #ffea00 0%, #ff9500 40%, #ff5722 80%, #e25822 100%);
+      --glow-color: radial-gradient(circle, rgba(255, 234, 0, 0.4) 0%, rgba(255, 149, 0, 0.3) 40%, rgba(255, 87, 34, 0.1) 70%, transparent 100%);
+      --wax-drip-color: #f5deb3;
+      --candlestick-color: #8B4513;
+      --background-color: #1a1a2e;
+      --surface-color: #16213e;
+      --primary-color: #ff9500;
+      --text-color: #e6e6e6;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: var(--background-color);
+      font-family: 'Poppins', sans-serif;
+      color: var(--text-color);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .ambient-light {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(255, 149, 0, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+    
+    .ambient-light.blown {
+      opacity: 0;
+    }
+    
+    .scene {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      border-radius: 20px;
+      background: var(--surface-color);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .candle-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    
+    .candle-plate {
+      position: relative;
+      width: 140px;
+      height: 10px;
+      background: var(--candlestick-color);
+      border-radius: 50%;
+      z-index: 1;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .candle {
+      position: relative;
+      width: 60px;
+      height: 180px;
+      background: var(--candle-color);
+      border-radius: 10px 10px 0 0;
+      overflow: visible;
+      z-index: 2;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .candle::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 10px;
+      background-color: #222;
+      border-radius: 2px;
+    }
+    
+    .wax-drips {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .wax-drip {
+      position: absolute;
+      background: var(--wax-drip-color);
+      border-radius: 10px;
+      opacity: 0.9;
+    }
+    
+    .wax-drip:nth-child(1) {
+      top: 20px;
+      left: -5px;
+      width: 15px;
+      height: 30px;
+      transform: rotate(-5deg);
+    }
+    
+    .wax-drip:nth-child(2) {
+      top: 40px;
+      right: -8px;
+      width: 20px;
+      height: 50px;
+      transform: rotate(8deg);
+    }
+    
+    .wax-drip:nth-child(3) {
+      top: 80px;
+      left: -10px;
+      width: 18px;
+      height: 45px;
+      transform: rotate(-10deg);
+    }
+    
+    .wax-drip:nth-child(4) {
+      top: 120px;
+      right: -7px;
+      width: 14px;
+      height: 35px;
+      transform: rotate(5deg);
+    }
+    
+    .flame-container {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+    
+    .flame {
+      position: relative;
+      width: 24px;
+      height: 60px;
+      background: var(--flame-color);
+      border-radius: 50% 50% 20% 20%;
+      transform-origin: center bottom;
+      box-shadow: 0 0 20px #ff9500, 0 0 40px #ff5722;
+      animation: flicker 0.8s ease-in-out infinite alternate;
+      opacity: 1;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    
+    .flame.blown {
+      opacity: 0;
+      transform: scale(0.1) translateY(10px);
+    }
+    
+    .glow {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 100px;
+      background: var(--glow-color);
+      border-radius: 50%;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+      pointer-events: none;
+    }
+    
+    .glow.blown {
+      opacity: 0;
+    }
+    
+    .smoke {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 0;
+      border-radius: 10px;
+      background: linear-gradient(to top, rgba(200, 200, 200, 0.7), rgba(200, 200, 200, 0));
+      opacity: 0;
+      transition: height 0.3s, opacity 0.3s;
+      pointer-events: none;
+    }
+    
+    .smoke.active {
+      height: 150px;
+      opacity: 0.8;
+      animation: rise 3s forwards;
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      padding: 12px 24px;
+      background: transparent;
+      color: var(--text-color);
+      border: 2px solid var(--primary-color);
+      border-radius: 30px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    
+    button:hover {
+      background-color: var(--primary-color);
+      color: #000;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 149, 0, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button#light-btn {
+      background-color: var(--primary-color);
+      color: #000;
+    }
+    
+    button#light-btn.active {
+      background-color: transparent;
+      color: var(--text-color);
+    }
+    
+    .status {
+      font-size: 14px;
+      margin-top: 5px;
+      text-align: center;
+      min-height: 20px;
+    }
+    
+    .sensitivity-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 300px;
+    }
+    
+    .sensitivity-label {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    
+    .sensitivity-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: #444;
+      border-radius: 3px;
+      outline: none;
+    }
+    
+    .sensitivity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .sensitivity-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    
+    .blow-meter-container {
+      width: 100%;
+      max-width: 300px;
+      margin-top: 10px;
+    }
+    
+    .blow-meter {
+      width: 100%;
+      height: 10px;
+      background-color: #444;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    .blow-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #3498db, #e74c3c);
+      transition: width 0.2s;
+      border-radius: 5px;
+    }
+    
+    .blow-meter-label {
+      font-size: 12px;
+      margin-top: 5px;
+      text-align: center;
+    }
+    
+    @keyframes flicker {
+      0% {
+        transform: translateX(-50%) scale(0.95, 1.1) rotate(-1deg);
+      }
+      25% {
+        transform: translateX(-51%) scale(1, 0.95) rotate(1deg);
+      }
+      50% {
+        transform: translateX(-49%) scale(1.05, 1.05) rotate(-1deg);
+      }
+      75% {
+        transform: translateX(-50%) scale(0.95, 1) rotate(1deg);
+      }
+      100% {
+        transform: translateX(-50%) scale(1, 0.98) rotate(0deg);
+      }
+    }
+    
+    @keyframes rise {
+      0% {
+        transform: translateX(-50%) translateY(0) scale(1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateX(-80%) translateY(-200px) scale(5);
+        opacity: 0;
+      }
+    }
+    
+    /* Animation for relighting */
+    @keyframes relight {
+      0% {
+        opacity: 0;
+        transform: scale(0.2) translateY(5px);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(1.3) translateY(-2px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    
+    .flame.relight {
+      animation: relight 0.5s ease-out forwards, flicker 0.8s 0.5s ease-in-out infinite alternate;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 500px) {
+      .scene {
+        padding: 30px 20px;
+      }
+      
+      .candle {
+        width: 50px;
+        height: 150px;
+      }
+      
+      .flame {
+        width: 20px;
+        height: 50px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-light"></div>
+  
+  <div class="scene">
+    <div class="candle-container">
+      <div class="flame-container">
+        <div class="smoke"></div>
+        <div class="flame"></div>
+      </div>
+      <div class="glow"></div>
+      
+      <div class="candle">
+        <div class="wax-drips">
+          <div class="wax-drip"></div>
+          <div class="wax-drip"></div>
+          <div class="wax-drip"></div>
+          <div class="wax-drip"></div>
+        </div>
+      </div>
+      <div class="candle-plate"></div>
+    </div>
+    
+    <div class="controls">
+      <div class="button-group">
+        <button id="mic-btn">Enable Microphone</button>
+        <button id="light-btn">Relight Candle</button>
+        <button id="test-btn">Test Blow</button>
+      </div>
+      
+      <div class="sensitivity-control">
+        <div class="sensitivity-label">
+          <span>Less Sensitive</span>
+          <span>More Sensitive</span>
+        </div>
+        <input type="range" class="sensitivity-slider" id="sensitivity" min="1" max="100" value="50">
+      </div>
+      
+      <div class="blow-meter-container">
+        <div class="blow-meter">
+          <div class="blow-meter-fill"></div>
+        </div>
+        <div class="blow-meter-label">Blow Strength</div>
+      </div>
+      
+      <div class="status">Ready to light</div>
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const flame = document.querySelector('.flame');
+    const glow = document.querySelector('.glow');
+    const smoke = document.querySelector('.smoke');
+    const ambientLight = document.querySelector('.ambient-light');
+    const micBtn = document.getElementById('mic-btn');
+    const lightBtn = document.getElementById('light-btn');
+    const testBtn = document.getElementById('test-btn');
+    const status = document.querySelector('.status');
+    const blowMeterFill = document.querySelector('.blow-meter-fill');
+    const sensitivitySlider = document.getElementById('sensitivity');
+    
+    // Audio variables
+    let audioContext;
+    let microphone;
+    let analyser;
+    let dataArray;
+    let isListening = false;
+    let isCandleLit = true;
+    
+    // Configuration
+    let blowThreshold = 130; // Will be adjusted based on sensitivity
+    let baseSensitivity = 50;
+    let consecutiveBlowFrames = 0;
+    const requiredBlowFrames = 3; // Make it a bit more responsive
+    
+    // Update UI to reflect initial state
+    updateCandleState();
+    
+    // Update sensitivity when control changes
+    sensitivitySlider.addEventListener('input', () => {
+      const sensitivity = parseInt(sensitivitySlider.value);
+      // Lower values make it more sensitive (easier to blow out)
+      blowThreshold = 200 - sensitivity * 1.5;
+    });
+    
+    // Initialize microphone
+    micBtn.addEventListener('click', async () => {
+      try {
+        // Create audio context
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Get microphone stream
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphone = audioContext.createMediaStreamSource(stream);
+        
+        // Set up analyzer
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024; // Higher resolution
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        
+        // Connect microphone to analyzer
+        microphone.connect(analyser);
+        
+        // Start monitoring
+        isListening = true;
+        status.textContent = 'Listening for blowing sounds';
+        micBtn.textContent = 'Microphone Active';
+        micBtn.disabled = true;
+        
+        // Start detection loop
+        detectBlowing();
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        status.textContent = 'Error accessing microphone. Please try again.';
+      }
+    });
+    
+    // Detect blowing sounds
+    function detectBlowing() {
+      if (!isListening) return;
+      
+      // Get audio data
+      analyser.getByteFrequencyData(dataArray);
+      
+      // Calculate average volume in low-mid frequencies (wind/blowing sound)
+      // Focus more on specific frequency ranges that match blowing sounds
+      let sum = 0;
+      let count = 0;
+      
+      // Target frequencies more likely to be present in blowing sounds
+      const blowingRanges = [
+        { start: 10, end: 30, weight: 1.5 },   // Low frequencies (wind noise)
+        { start: 30, end: 50, weight: 1.0 },   // Mid-low frequencies
+        { start: 50, end: 70, weight: 0.7 }    // Additional range with lower weight
+      ];
+      
+      blowingRanges.forEach(range => {
+        for (let i = range.start; i < range.end; i++) {
+          sum += dataArray[i] * range.weight;
+          count += range.weight;
+        }
+      });
+      
+      const weightedAverage = sum / count;
+      
+      // Update blow meter with smoothing
+      const meterPercentage = Math.min(100, (weightedAverage / 200) * 100);
+      blowMeterFill.style.width = `${meterPercentage}%`;
+      
+      // Check if blowing detected
+      if (weightedAverage > blowThreshold) {
+        consecutiveBlowFrames++;
+        
+        if (consecutiveBlowFrames >= requiredBlowFrames && isCandleLit) {
+          blowOutCandle();
+        }
+      } else {
+        // Gradually reduce counter (more natural response)
+        consecutiveBlowFrames = Math.max(0, consecutiveBlowFrames - 0.5);
+      }
+      
+      // Continue detection loop
+      requestAnimationFrame(detectBlowing);
+    }
+    
+    // Blow out candle
+    function blowOutCandle() {
+      if (!isCandleLit) return;
+      
+      isCandleLit = false;
+      updateCandleState();
+      
+      // Play blowing out effect
+      flame.classList.add('blown');
+      glow.classList.add('blown');
+      ambientLight.classList.add('blown');
+      
+      // Delay smoke to match flame disappearing
+      setTimeout(() => {
+        smoke.classList.add('active');
+      }, 100);
+      
+      status.textContent = 'Candle blown out!';
+      
+      // Update button state
+      lightBtn.textContent = 'Relight Candle';
+      lightBtn.classList.remove('active');
+      
+      // Reset smoke animation after it completes
+      setTimeout(() => {
+        smoke.classList.remove('active');
+      }, 3000);
+    }
+    
+    // Light or relight candle
+    lightBtn.addEventListener('click', () => {
+      if (!isCandleLit) {
+        // Relight the candle
+        isCandleLit = true;
+        updateCandleState();
+        
+        // Remove blown state
+        flame.classList.remove('blown');
+        glow.classList.remove('blown');
+        ambientLight.classList.remove('blown');
+        smoke.classList.remove('active');
+        
+        // Add relight animation
+        flame.classList.add('relight');
+        
+        // Update button state
+        lightBtn.textContent = 'Candle Lit';
+        lightBtn.classList.add('active');
+        
+        status.textContent = 'Candle relit and burning';
+        
+        // Remove relight class after animation completes
+        setTimeout(() => {
+          flame.classList.remove('relight');
+        }, 1000);
+      }
+    });
+    
+    // Test blow button (for testing without microphone)
+    testBtn.addEventListener('click', () => {
+      if (isCandleLit) {
+        blowOutCandle();
+      } else {
+        status.textContent = 'Candle is already out. Click "Relight Candle" to continue.';
+      }
+    });
+    
+    // Update candle state visual elements
+    function updateCandleState() {
+      if (isCandleLit) {
+        flame.style.display = 'block';
+        glow.style.display = 'block';
+        lightBtn.textContent = 'Candle Lit';
+        lightBtn.classList.add('active');
+      } else {
+        lightBtn.textContent = 'Relight Candle';
+        lightBtn.classList.remove('active');
+      }
+    }
+    
+    // Initial candle state
+    flame.classList.add('relight');
+    setTimeout(() => {
+      flame.classList.remove('relight');
+    }, 1000);
+  </script>
+</body>
+</html>
